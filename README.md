@@ -3,7 +3,7 @@
 # Clone the Repository
 
 ``` 
-git clone github.com/
+https://github.com/evkishore/Kishore.git
 ```
 
 # Build the Docker Image

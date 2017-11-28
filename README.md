@@ -3,7 +3,7 @@
 # Clone the Repository
 
 ``` 
-git clone github.com/babacoders/kishore-win-docker2
+git clone github.com/
 ```
 
 # Build the Docker Image

@@ -1,0 +1,116 @@
+FROM microsoft/windowsservercore
+
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+
+# IIS installation
+RUN Add-WindowsFeature Web-Server
+
+
+COPY microsoft-windows-netfx3-ondemand-package.cab c:/sources/sxs/microsoft-windows-netfx3-ondemand-package.cab
+
+
+
+#.NET Framework 3.5
+
+
+RUN Install-WindowsFeature -Name Net-Framework-Core -source C:\sources\sxs
+
+#HTTP Activation                      
+
+
+#NET-HTTP-Activation       
+
+RUN Install-WindowsFeature NET-HTTP-Activation ; powershell Install-WindowsFeature NET-Non-HTTP-Activ
+
+
+#wcf-http-activation
+
+
+
+#.NET Framework 4.6 Features  
+
+RUN Install-WindowsFeature NET-Framework-45-ASPNET ; powershell Install-WindowsFeature Web-Asp-Net45
+
+# Install IIS-Sub features
+
+RUN Enable-WindowsOptionalFeature -Online -FeatureName IIS-ApplicationDevelopment ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-ASP ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-ASPNET ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-ASPNET45 ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-BasicAuthentication ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-CertProvider ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-ClientCertificateMappingAuthentication ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-CommonHttpFeatures; Enable-WindowsOptionalFeature -Online -FeatureName IIS-DefaultDocument ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-DigestAuthentication ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-DirectoryBrowsing ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-HealthAndDiagnostics ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-HostableWebCore ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpCompressionDynamic ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpCompressionStatic ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpErrors ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpLogging ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpRedirect ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-HttpTracing ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-IISCertificateMappingAuthentication ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-IPSecurity ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-ISAPIExtensions ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-ISAPIFilter 
+#RUN Enable-WindowsOptionalFeature -Online -All -FeatureName IIS-LegacySnapIn 
+RUN Enable-WindowsOptionalFeature -Online -All -FeatureName IIS-LegacyScripts ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-LoggingLibraries ; Enable-WindowsOptionalFeature -Online  -All -FeatureName IIS-Metabase ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-NetFxExtensibility ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-NetFxExtensibility45 ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-ODBCLogging ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-Performance ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-RequestFiltering ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-RequestMonitor ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-Security ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-StaticContent ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-URLAuthorization ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebDAV ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServer ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-WebSockets ; Enable-WindowsOptionalFeature -Online -FeatureName IIS-WindowsAuthentication ;  Enable-WindowsOptionalFeature -Online -All -FeatureName IIS-WMICompatibility ; Enable-WindowsOptionalFeature -Online -FeatureName NetFx4Extended-ASPNET45
+
+#deployment begins
+ 
+
+# creating D drive
+
+RUN powershell -NoProfile -Command New-Item -ItemType directory -Path C:\drived;New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\DOS Devices' -Name 'D:'  -Value '\??\C:\drived' -PropertyType String;
+
+# Creating directories as pre-requisite
+
+RUN New-Item -ItemType directory -Path 'C:\Program Files\********','C:\Program Files\*******\log',c:\install,c:\temp,D:\Apps,D:\Apps\mqm,D:\SRVDATA
+
+# Adding install binaries
+
+ADD ./msi/ /install/
+
+#SyMMQSSLConfig_Install manual installation
+ADD ./mqm/ drived/apps/mqm/
+RUN  [Environment]::SetEnvironmentVariable('MQSYMSSL_DIR','D:\apps\mqm\data\SSL\SyM', [EnvironmentVariableTarget]::Machine);[Environment]::SetEnvironmentVariable('MQSYMSSLKEYR','D:\apps\mqm\data\SSL\SyM\key', [EnvironmentVariableTarget]::Machine)
+
+#Metadb MSG UI5 SE
+RUN  [Environment]::SetEnvironmentVariable('GWMCOMPUTERNAME','WSDNW4IJEOT', [EnvironmentVariableTarget]::Machine)
+WORKDIR /install
+
+# Deploying root and intermediate certs
+
+ADD /certs /install/
+
+RUN $file = ( Get-ChildItem -Path C:\install\bankroot.cer ) ; $file | Import-Certificate -CertStoreLocation cert:\localMachine\Root ; $file1 = ( Get-ChildItem -Path C:\install\boarootcerificate.cer ) ; $file1 | Import-Certificate -CertStoreLocation cert:\localMachine\Root ; $file2 = ( Get-ChildItem -Path C:\install\***rootcerificate.cer ) ; $file2 | Import-Certificate -CertStoreLocation cert:\localMachine\CA ;  $file3 = ( Get-ChildItem -Path C:\install\Infra-Authority-primary.cer ) ; $file3 | Import-Certificate -CertStoreLocation cert:\localMachine\CA ; $file4 = ( Get-ChildItem -Path C:\install\Infra-Authority-scondary.cer )
+
+# Importing server Certificate
+RUN $mypwd=ConvertTo-SecureString -String "Password1" -Force -AsPlainText ; Import-PfxCertificate -FilePath C:\install\DockerUI.se.hew.us.ml.com.pfx cert:\localMachine\my -Password $mypwd
+
+#RUN New-WebBinding -Name "Default web Site" -Port 443 -Protocol https -IPAddress ''
+RUN New-WebBinding -Name 'Default Web Site' -Port 443 -Protocol https -IPaddress ''; Get-Item -Path "cert:\LocalMachine\My\*********" | New-Item -Path IIS:\SslBindings\0.0.0.0!443 -Force
+
+#Enabling IIS management console
+RUN Dism /online /enable-feature /featurename:IIS-ManagementService /all;New-ItemProperty -Path HKLM:\software\microsoft\WebManagement\Server -Name EnableRemoteManagement -Value 1 -Force ; net user admin Pass**** /ADD ; net localgroup administrators admin /add
+
+
+WORKDIR /install
+
+#Install MLIF products
+
+RUN start-Process msiexec -ArgumentList '/i GWMTools.msi ADDLOCAL=Common,Server /q /l*v GWMTools.log' -wait
+
+COPY ./GWMTools/Config/MLCustomAction.dll /drived/apps/GWMTools/config
+
+RUN start-Process msiexec -ArgumentList '/i GWMWindowsConfigStandard.msi /q /l*v GWMWindowsConfigStandard.log' -wait;start-Process msiexec -ArgumentList '/i GWMNET4.0Tools.msi /q /l*v GWMNET4.0Tools.log' -wait;start-Process msiexec -ArgumentList '/i GWIM_DotNet35_Config_Std2k12.msi /q /l*v GWIM_DotNet35_Config_Std2k12.log' -wait;start-Process msiexec -ArgumentList '/i GWM_DotNet40_Config_Std2k12.msi /q /l*v GWM_DotNet40_Config_Std2k12.log' -wait;start-Process msiexec -ArgumentList '/i NUnit-2.5.9.10348.msi /q /l*v NUnit-2.5.9.10348.log' -wait;start-Process msiexec -ArgumentList '/i GWMAjax_Control_Toolkit.msi ADDLOCAL=Complete /q /l*v GWMAjax_Control_Toolkit.log' -wait
+RUN ./GWMIIS8.5ConfigStandard_Install.exe /s -wait
+ADD ./Framework64/ /Windows/Microsoft.NET/Framework64/
+RUN start-Process msiexec -ArgumentList '/i GWIMBPM.WIN.EMS.CLIENT.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\GWIMBPM.WIN.EMS.CLIENT.log' -wait;start-Process msiexec -ArgumentList '/i GWM_DotNet40_Config_Std_Frameworks.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\GWM_DotNet40_Config_Std_Frameworks.log' -wait;start-Process msiexec -ArgumentList '/i MicrosoftUDDISDKx64.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\MicrosoftUDDISDKx64.log' -wait
+
+RUN start-Process msiexec -ArgumentList '/i SyM_InstrumentationV4.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\SyM_InstrumentationV4.log' -wait;start-Process msiexec -ArgumentList '/i SecurityToken4.msi ALLUSERS=1 ADDLOCAL=DesktopServer USE_MLCA=yes /q /L*V c:\install\SecurityToken4.log' -wait;start-Process msiexec -ArgumentList '/i MLIFv4BEC.msi ALLUSERS=1 ADDLOCAL=AppServer,BECPolicy,BECTools USE_MLCA=yes /q /L*V c:\install\MLIFv4BEC.log' -wait;start-Process msiexec -ArgumentList '/i MLIFLegacyUtility.msi ALLUSERS=1 ADDLOCAL=Context,URLRetrieval USE_MLCA=yes /q /L*V c:\install\MLIFLegacyUtility.log' -wait;start-Process msiexec -ArgumentList '/i Generic_Frameworks_Configurations4.msi ALLUSERS=1 ADDLOCAL=WebUIConfig USE_MLCA=yes /q /L*V c:\install\Generic_Frameworks_Configurations4.log' -wait;start-Process msiexec -ArgumentList '/i MLIFv4CacheORCLCoherenceClient.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\MLIFv4CacheORCLCoherenceClient.log' -wait;start-Process msiexec -ArgumentList '/i MLIFv4Base.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\MLIFv4Base.log' -wait;start-Process msiexec -ArgumentList '/i MLIFv4Server.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\MLIFv4Server.log' -wait;start-Process msiexec -ArgumentList '/i MLIFv4Common.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\MLIFv4Common.log' -wait;start-Process msiexec -ArgumentList '/i SiteManagementDFToolsV4.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\SiteManagementDFToolsV4.log' -wait;start-Process msiexec -ArgumentList '/i MLIFv4Publisher.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\MLIFv4Publisher.log' -wait;start-Process msiexec -ArgumentList '/i SOLASoapHeader_64.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\CoreFramework.NIF.SOLASoapHeader.log' -wait;start-Process msiexec -ArgumentList '/i ContextCoreTypes.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\ClientFinancials.ASM.ContextCoreTypes_BAND.log' -wait;start-Process msiexec -ArgumentList '/i ContextAccessors.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\ClientFinancials.ASM.ContextAccessors.log' -wait;start-Process msiexec -ArgumentList '/i CoreFramework.DBD.TGADP_64.msi ALLUSERS=1 ADDLOCAL=Complete USE_MLCA=yes /q /L*V c:\install\CoreFramework.DBD.TGADP_64.log' -wait;start-Process msiexec -ArgumentList '/i SF_Configuration_BAND.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes USE_MLCA=yes /q /L*V c:\install\SF_Configuration_BAND.log' -wait;start-Process msiexec -ArgumentList '/i ConfigurationFramework4.msi ALLUSERS=1 ADDLOCAL=Configuration_Framework USE_MLCA=yes /q /L*V c:\install\ConfigurationFramework4.log' -wait;start-Process msiexec -ArgumentList '/i MLIFv4SampleServices.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\MLIFv4SampleServices.log' -wait;MKDIR C:\Windows\Microsoft.NET\assembly\GAC_MSIL\AjaxControlToolkit\v4.0_4.1.50401.0__28f01b0e84b6d53e
+
+ADD ./v4.0_4.1.50401.0__28f01b0e84b6d53e/ /Windows/Microsoft.NET/assembly/GAC_MSIL/AjaxControlToolkit/v4.0_4.1.50401.0__28f01b0e84b6d53e/
+
+RUN start-Process msiexec -ArgumentList '/i MLIFv4Test.msi ALLUSERS=1 ADDLOCAL=ProductTester,ServiceTester USE_MLCA=yes /q /L*V c:\install\MLIFv4Test.log' -wait;start-Process msiexec -ArgumentList '/i MLDSFv4Core.msi ALLUSERS=1 ADDLOCAL=UIServer USE_MLCA=yes /q /L*V c:\install\MLDSFv4Core.log' -wait;start-Process msiexec -ArgumentList '/i MLDSFv4SampleServices.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\MLDSFv4SampleServices.log' -wait;start-Process msiexec -ArgumentList '/i MLDSFv4Console.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\MLDSFv4Console.log' -wait;start-Process msiexec -ArgumentList '/i SecurityFramework4.msi ALLUSERS=1 ADDLOCAL=ControlTest,IF_Security_Framework,R12bin64,SFv4,WebApi USE_MLCA=yes /q /L*V c:\install\SecurityFramework4.log' -wait;start-Process msiexec -ArgumentList '/i MLPFv4.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\MLPFv4.log' -wait;start-Process msiexec -ArgumentList '/i MLPFAddOnV4.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V c:\install\MLPFAddOnV4.log' -wait
+
+
+RUN gacutil /if nunit.framework.dll;gacutil /if Microsoft.IdentityModel.dll;gacutil /if Microsoft.IdentityModel.Extensions.dll;EventCreate /ID 1 /L APPLICATION /T INFORMATION /SO 'ASP.NET 4.7.2103.0' /D 'ASP.NET 4.7' ;EventCreate /ID 1 /L APPLICATION /T ERROR /SO 'ASP.NET 4.7.2103.0' /D 'ASP.NET 4.7';New-EventLog -Source 'ASP.NET 4.6.1586.0' -LogName "Application"; 
+
+COPY ./MLConfig/ /Windows/Microsoft.NET/Framework64/v4.0.30319/Config/MLConfig/
+
+# SM agent installation
+
+#RUN ["c:\\install\\ca-wa-12.52-sp01-cr06-win64-64.exe -f c:\\install\\ca-wa-installer.properties -i silent"]
+
+#Post deployement steps
+#Copy latest Smredist to SM director and install
+RUN powershell ./SmAgentInstall.ps1
+RUN powershell ./CopyFiles.ps1
+RUN powershell ./AliasPort.ps1
+
+#Changing SQL-Client Alias port in HKEY_LOCAL_MACHINE
+#RUN ["c:\\install\\SQLClient_AliasPort_Change_DH_Install.EXE silent"]
+
+CMD ["ping", "-t", "localhost"]

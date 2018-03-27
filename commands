@@ -1,0 +1,90 @@
+msiexec -i GWMTools.msi /q ADDLOCAL=Common,Server /L*V GWMTools.msi.log
+start /wait WMM.WAP.HealthCare.msi ALLUSERS=1 ADDLOCAL=AppServer USE_MLCA=yes /q /L*V WMM.WAP.HealthCare.log
+
+docker build command:
+docker build -t mlbuild2 .
+docker commit <containerId> <imageName>
+ docker run -–name <Container_Name> <Image_Name>
+
+docker run -d -p 8080:8080 --name websitecontainer myiis
+
+docker run -d -p 443:443 --name vol -v C:\temp\WM_CRC:C:\inetpub\wwwroot\publish\WM_CRC crc:v1
+
+docker inspect -f "{{ .NetworkSettings.Networks.nat.IPAddress }}" <container id>
+
+docker exec -i -t 0c3b280b8b63 powershell.exe
+
+docker stats --all --format "table {{.ID}}\t{{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}"
+
+reg query "HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full"| findstr Version
+
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework\v4.0.30319\SKUs
+
+
+$file = ( Get-ChildItem -Path C:\files\root.cer )
+$file | Import-Certificate -CertStoreLocation cert:\CurrentUser\Root
+
+$mypwd=ConvertTo-SecureString -String "Password1" -Force –AsPlainText
+Import-PfxCertificate –FilePath C:\mypfx.pfx cert:\localMachine\my -Password $mypwd
+
+ 
+RUN NET USER testing "Password01!" /ADD
+RUN NET LOCALGROUP "Administrators" "testing" /ADD
+
+Enter-PSSession with -RunAsAdministrator command and then create user and add to administrator's group via get-command -module Microsoft.Powershell.localaccounts
+
+Get-Childitem –Path C:\ -Include *HSG* -Recurse --file search
+
+Set-LocalUser administrator -Password $password
+
+Select-String -Path "wm*.log" -Pattern "dotnet"
+
+$A = Get-EventLog -Log Application -Newest 3
+
+Get-Eventlog application -Newest 20 | Where-Object {$_.entryType -Match "Error"}
+
+Get-EventLog -LogName Application -Index 1421 | Format-List
+New-WebBinding -Name "Default web Site" -Port 443 -Protocol https -IPAddress ''
+Import-Module Webadministration  
+New-WebBinding -Name "DockerUI.se.hew.us.ml.com" -Port 443 -Protocol https -IPAddress '' 
+Test-Path IIS:\SslBindings\0.0.0.0!443
+Get-Item -Path "cert:\LocalMachine\My\********Machine ID*****" | New-Item -Path IIS:\SslBindings\0.0.0.0!443 -Force
+Remove-WebBinding -Name "Default web Site" -Port 443 -Protocol https
+(Get-WebBinding -Name 'Deafult Web Site' -Port 443).bindingInformation
+Set-Location Cert:\localmachine\My
+cert-importcertificate -file path c:\cert.cer
+Get-ChildItem | Format-Table Subject, FriendlyName, Thumbprint -AutoSize
+Get-Item IIS:\SslBindings\0.0.0.0!443
+
+appcmd.exe set config "Default Web Site" /section:access  /sslFlags:Ssl /commit:APPHOST
+
+msiexec -i WMM.WAP.HealthCare.msi /q ADDLOCAL=AppServer USE_MLCA=yes PROFILEFILE=D:\apps\GWMTools\profile.txt /L*V WMM.WAP.HealthCare.log
+
+docker network create -d transparent MyTransparentNetwork
+docker run -it --name IIS04 --network=MytransparentNet microsoft/iis
+
+docker version
+docker rm $(docker ps -a -q)
+Get-NetAdapter | where {$_.Name -match "Transparent"}
+docker network create -d transparent --subnet=***** --gateway=IP**** tlan2
+
+docker run -it --network=tlan2 --ip **** microsoft/windowsservercore powershell
+
+MQSYMSSL_DIR                   D:\apps\mqm\data\SSL\SyM
+MQSYMSSLKEYR                   D:\apps\mqm\data\SSL\SyM\key
+
+
+GWMCOMPUTERNAME=*******
+$env:GWMCOMPUTERNAME = "wsdnw12ge" --temporary 
+[Environment]::SetEnvironmentVariable("MQSYMSSL_DIR", "D:\apps\mqm\data\SSL\SyM", "Machine")
+[Environment]::SetEnvironmentVariable("MQSYMSSLKEYR", "D:\apps\mqm\data\SSL\SyM\key", "Machine") -perminent
+
+
+gacutil /if nunit.framework.dll
+Microsfot identity
+Microsfor identity extension
+update port 15001 in data.dll
+
+
+msiexec /a \\<path>\x.msi /qb TARGETDIR=c:\Temp\mlifbecfiles to extract MSIs
